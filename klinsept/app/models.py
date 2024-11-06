@@ -1,11 +1,16 @@
 from django.db import models
 from django.core.validators import RegexValidator,MaxValueValidator, MinValueValidator
+from django.contrib.auth.hashers import make_password, check_password
+from .utility import generate_otp
+from datetime import timedelta
+from django.utils import timezone
 
 
 class User(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=254, unique=True)
+    # check phonenumber validator
     phone_number = models.CharField(
         max_length=20,
         validators=[
@@ -16,11 +21,33 @@ class User(models.Model):
         ]
     )
     location = models.CharField(max_length=50)
+    hashed_password = models.CharField(max_length=128,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # otp storage
+    otp = models.CharField(max_length=7,null=True,blank=True)
+    otp_expiration = models.DateTimeField(null=True,blank=True)
+
+    # otp configuration
+    def set_otp(self):
+        self.otp = str(generate_otp())
+        self.otp_expiration = timezone.now()
+        self.save()
+
+    # confirm if otp is valid
+    def is_otp_valid(self):
+        if self.otp_expiration:
+            return timedelta.now() < self.otp_expiration + timedelta(minutes=2)
+        return False
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def set_password(self, raw_password):
+        self.hashed_password = make_password(raw_password)
+    
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.hashed_password)
 
 
 class Category(models.Model):
