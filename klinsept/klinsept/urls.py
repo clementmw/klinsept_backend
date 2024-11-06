@@ -16,7 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from app.views import getProducts,signUp,Login,password_reset_otp,verify_otp
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls), #to be changed and added api/v1.0 to be use with api keys
+    path('api/v1.0/products/', getProducts, name='get_products'),
+    # signup user
+    path('api/v1.0/auth/sigin/',signUp,name='signUp_user'),
+    # login 
+    path('api/v1.0/auth/login/',Login,name='login_user'),
+    # get otp 
+    path('api/v1.0/auth/otp/request/',password_reset_otp,name="password_reset_otp"),
+    # Reset password and confirm otp
+    path('api/v1.0/auth/otp/confirm/',verify_otp, name = "otp_confirmation")
+
 ]
