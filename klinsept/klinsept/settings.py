@@ -26,11 +26,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-9522(5=2brluc5goap3-%8xg9lut*&tjmutsx_may^qz@6!a84'
 API_KEY = config('API_KEY')
+print(f"API_KEY: {API_KEY}")  # This should print the key during startup.
+
 # SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Set session expiry for admin users
 SESSION_COOKIE_AGE = 3600  # Log out after 1 hr of inactivity (
@@ -49,11 +51,14 @@ INSTALLED_APPS = [
     'app',
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
+
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -64,6 +69,34 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'klinsept.urls'
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+      
+        # if you're running the frontend locally
+]
+
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
+
+# Optional: Specify allowed headers
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+    'x-csrftoken',
+    'accept',
+    'accept-encoding',
+    'x-requested-with',
+    'Cache-Control',
+    'X-Requested-With',
+]
+APPEND_SLASH=False
 
 TEMPLATES = [
     {
