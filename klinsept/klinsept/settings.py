@@ -50,7 +50,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'app',
     'rest_framework',
-    'rest_framework_simplejwt',
     'corsheaders',
 
 ]
@@ -70,32 +69,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'klinsept.urls'
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-      
-        # if you're running the frontend locally
-]
 
-CORS_ALLOW_METHODS = [
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS',
-]
-
-# Optional: Specify allowed headers
-CORS_ALLOW_HEADERS = [
-    'content-type',
-    'authorization',
-    'x-csrftoken',
-    'accept',
-    'accept-encoding',
-    'x-requested-with',
-    'Cache-Control',
-    'X-Requested-With',
-]
 APPEND_SLASH=False
 
 TEMPLATES = [
@@ -123,7 +97,7 @@ WSGI_APPLICATION = 'klinsept.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'klinsept_db.sqlite3',
     }
 }
 
@@ -169,18 +143,16 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# jwt
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-}
+AUTH_USER_MODEL = 'app.User'
 
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),  # Token validity period
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Refresh token validity period
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    }
 }
 
 # configure stmp server for email configuration
