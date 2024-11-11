@@ -1,29 +1,25 @@
 from django.db import models
 from django.core.validators import RegexValidator, MaxValueValidator, MinValueValidator
-from django.contrib.auth.hashers import make_password, check_password
 from .utility import generate_otp
 from datetime import timedelta
 from django.utils import timezone
+from django.contrib.auth.models import AbstractUser
 
 
-class User(models.Model):
+class User(AbstractUser):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(max_length=254, unique=True)
-    phone_number = models.CharField(
-        max_length=20,
-        validators=[
-            RegexValidator(
-                regex=r'^\+?1?\d{9,15}$',
-                message="Phone number must be in the format: '+999999999'. Up to 15 digits allowed."
-            )
-        ]
-    )
-    hashed_password = models.CharField(max_length=128, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    phone_number = models.CharField(max_length=20)
+    password = models.CharField(max_length=128, null=True, blank=True)
+    username=None
     otp = models.CharField(max_length=7, null=True, blank=True)
     otp_expiration = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS=[]
 
     def set_otp(self):
         self.otp = str(generate_otp())
@@ -38,11 +34,7 @@ class User(models.Model):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     
-    def set_password(self, raw_password):
-        self.hashed_password = make_password(raw_password)
-    
-    def check_password(self, raw_password):
-        return check_password(raw_password, self.hashed_password)
+
 
 
 class Category(models.Model):
@@ -68,14 +60,15 @@ class Product(models.Model):
         return self.name
 
 class GuestUser(models.Model):
-    fullName = models.CharField(max_length=50)
-    email = models.EmailField(max_length=254)
-    phone_number = models.CharField(max_length=20)
+    first_name = models.CharField(max_length=50,null=True,blank=True)
+    last_name = models.CharField(max_length=50,null=True,blank=True)
+    email = models.EmailField(max_length=254,unique=True)
+    phone_number = models.CharField(max_length=20,null=True,blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
 class ShippingAddress(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shipping_addresses')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shipping_addresses',null=True,blank=True)
     guest_user = models.ForeignKey(GuestUser, on_delete=models.CASCADE, related_name='shipping_addresses', null=True, blank=True)
     street_address = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
@@ -94,12 +87,18 @@ class Order(models.Model):
     shipping_address = models.ForeignKey(ShippingAddress, on_delete=models.CASCADE, related_name='orders',null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
     status = models.CharField(max_length=50,default="Pending") 
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # to be added shipping cost and tax if provided by client
 
     def save(self, *args, **kwargs):
+        # Calculate the subtotal (sum of line_total from all order items)
         if not self.total_price:
-            self.total_price = sum(item.quantity * item.price for item in self.items.all())
+            order_subtotal = sum(item.line_total for item in self.items.all())
+            # Add shipping cost and tax
+            self.total_price = order_subtotal + self.shipping_cost + self.tax
         super().save(*args, **kwargs)
     
     def __str__(self):
@@ -107,15 +106,22 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items',null=True, blank=True)
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='order_items')
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    line_total = models.DecimalField(max_digits=10, decimal_places=2,editable=False,default='0.00') #calculates the total price of the product*quantity
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"{self.quantity} x {self.product.name}"
+
+    def save(self, *args, **kwargs):
+        # Calculate line_total as quantity * price before saving
+        self.line_total = self.quantity * self.price  
+        super().save(*args, **kwargs)
+    
 
 class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments',null=True, blank=True)
