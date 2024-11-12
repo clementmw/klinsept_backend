@@ -1,13 +1,30 @@
 from rest_framework import serializers
-from .models import User, Category, Product, Order, Review, Payment, ShippingAddress
+from .models import User, Category, Product, Order, Review, Payment, ShippingAddress,OrderItem,GuestUser
+# from django.contrib.auth.hashers import make_password, check_password 
 
 # to create serialized data for json 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'created_at']
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number','password' ,'created_at']
 
+        extra_kwargs = {
+            'password': {"write_only":True}
+        }
+    def create(self,validated_data):
+        password = validated_data.pop('password',None)
+        instance = self.Meta.model(**validated_data)
+        if password is not None:
+            instance.set_password(password)
+        instance.save()
+        return instance
+        
+
+class GuestUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GuestUser
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone_number', 'created_at']
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -23,3 +40,27 @@ class ProductSerializer(serializers.ModelSerializer):
 
     def get_category(self, obj):
         return [obj.category.name]  
+    
+# orderitems serializer
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)  # Serialize product as part of the OrderItem, but don't include 'quantity' or other product-specific fields here
+
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'product', 'quantity', 'price', 'line_total']
+
+# order serializer
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)  # Serialize order items as part of the order
+    user = UserSerializer(read_only=True)
+    guest_user = GuestUserSerializer  # Serialize guest user as part of the order
+    
+    class Meta:
+        model = Order
+        fields = ['id', 'user','guest_user', 'items', 'total_price','shipping_address']
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model:Payment
+        field = ['id','order','shipping_address','payment_method','user','total_price','status','payment_date']
