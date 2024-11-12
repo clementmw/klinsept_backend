@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from app.views import getProducts,RegisterUser,LoginUser,password_reset_otp,verify_otp,Logout,get_product_by_id,contact,add_to_cart,get_cart_items,remove_from_cart,create_order,test_authentication,get_cookie
+from app.views import getProducts,RegisterUser,LoginUser,password_reset_otp,verify_otp,Logout,get_product_by_id,contact,add_to_cart,get_cart_items,remove_from_cart,create_order,get_cookie,get_order
 
 urlpatterns = [
     path('admin/', admin.site.urls), #to be changed and added api/v1.0 to be use with api keys
@@ -46,7 +46,7 @@ urlpatterns = [
     path('api/v1.0/cart/remove/<int:id>', remove_from_cart, name='remove_from_cart'),
     # place order
     path('api/v1.0/order/', create_order, name='create_order'),
-    # test 
-    path('api/v1.0/test/',test_authentication, name='get_products'),
+    # get order
+    path('api/v1.0/user/order/',get_order, name='get_order'),
 
 ]
