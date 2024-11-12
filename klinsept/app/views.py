@@ -15,7 +15,9 @@ from django.core.exceptions import ValidationError
 from rest_framework.exceptions import AuthenticationFailed
 import jwt
 from datetime import datetime, timedelta, timezone
+from django.utils.timezone import now, timedelta
 from decouple import config
+from app.utility import otp_mail
 
 
 
@@ -88,10 +90,11 @@ def password_reset_otp(request):
 
         user.set_otp()
 
-        # Send OTP
-        subject = "Your Password Reset OTP"
-        message = f"Your OTP for password reset is: {user.otp}. It expires in 2 minutes."
-        send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
+        # # Send OTP
+        # subject = "Your Password Reset OTP"
+        # message = f"Your OTP for password reset is: {user.otp}. It expires in 2 minutes."
+        # send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
+        otp_mail(user.otp,user.email)
 
         return Response({"Message": "OTP sent to your email."})
     except Exception as e:
@@ -207,12 +210,13 @@ def add_to_cart(request):
         product.save()
 
         serializer = OrderItemSerializer(cart_item)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK) #to send serilized data using id to get cart items 
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # get items in cart
+# to be fixed 
 @api_view(['GET'])
 def get_cart_items(request):
     try:
@@ -246,7 +250,7 @@ def create_order(request):
         guest_user = None
         if token:
             try:
-                payload = jwt.decode(token, 'secret', algorithms=['HS256'])
+                payload = jwt.decode(token, config('SECRET'), algorithms=['HS256'])
                 user = User.objects.filter(id=payload['id']).first()
                 print(f"Authenticated user found: {user.last_name}")
             except jwt.ExpiredSignatureError:
@@ -336,12 +340,33 @@ def create_order(request):
 
         # Serialize and return the order data
         serializer = OrderSerializer(order)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({"order": serializer.data, "order_id": order.id}, status=status.HTTP_201_CREATED)
         
 
        
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# get order related to the email
+@api_view(['GET'])
+def get_order(request):
+    # Retrieve the order ID from the query parameters
+    order_id = request.query_params.get("order_id")
+
+    if not order_id:
+        return Response({"error": "Order ID is required in query parameters"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Fetch the order based on the provided order ID
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    # Serialize and return the order data
+    serialized = OrderSerializer(order)
+    return Response(serialized.data, status=status.HTTP_200_OK)
+
 
 
 # proceed to payment
