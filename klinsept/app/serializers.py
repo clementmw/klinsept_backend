@@ -49,15 +49,20 @@ class OrderItemSerializer(serializers.ModelSerializer):
         model = OrderItem
         fields = ['id', 'product', 'quantity', 'price', 'line_total']
 
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingAddress
+        fields = ['id','street_address','city','state','zip_code','country']
+
 # order serializer
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)  # Serialize order items as part of the order
     user = UserSerializer(read_only=True)
     guest_user = GuestUserSerializer  # Serialize guest user as part of the order
-    
+    shipping_address = ShippingAddressSerializer(read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'user','guest_user', 'items', 'total_price','shipping_address']
+        fields = ['id', 'user','guest_user', 'items', 'total_price','shipping_address','tracking_id']
 
 
 class PaymentSerializer(serializers.ModelSerializer):
