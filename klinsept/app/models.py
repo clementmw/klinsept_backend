@@ -86,9 +86,10 @@ class Order(models.Model):
     guest_user = models.ForeignKey(GuestUser, on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
     shipping_address = models.ForeignKey(ShippingAddress, on_delete=models.CASCADE, related_name='orders',null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
-    status = models.CharField(max_length=50,default="Pending") 
+    status = models.CharField(max_length=50,choices=[('paid','Paid'),('pending','Pending')],default="Pending") 
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tracking_id = models.CharField(max_length=20,unique=True,blank=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # to be added shipping cost and tax if provided by client
@@ -153,10 +154,3 @@ class Review(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
-class TokenBlocklist(models.Model):  # Corrected to models.Model
-    token = models.CharField(max_length=500, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Token blocked: {self.token}"
