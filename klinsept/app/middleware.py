@@ -20,7 +20,7 @@ class ApiKeyMiddleware(MiddlewareMixin):
 
             # Check if the API key matches the expected value
             if api_key != settings.API_KEY:
-                return JsonResponse({'error': 'Unauthorized user please use correct key'}, status=401)
+                return JsonResponse({'error': 'Unauthorized user please use correct key'}, status=401) #change response once in production 
 
         response = self.get_response(request)
         return response
