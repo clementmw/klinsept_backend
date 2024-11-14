@@ -16,14 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from app.views import getProducts,RegisterUser,LoginUser,password_reset_otp,verify_otp,Logout,get_product_by_id,contact,add_to_cart,get_cart_items,remove_from_cart,create_order,get_cookie,get_order,check_pending_orders,send_order_confirmation_email
+from app.views import getProducts,RegisterUser,LoginUser,password_reset_otp,verify_otp,Logout,get_product_by_id,contact,add_to_cart,get_cart_items,remove_from_cart,create_order,get_cookie,get_order,check_pending_orders,send_order_confirmation_email,related_products
 
 urlpatterns = [
     path('admin/', admin.site.urls), #to be changed and added api/v1.0 to be use with api keys
     # get all products
     path('api/v1.0/products/', getProducts, name='get_products'),
     # Get product by id
-    path('api/v1.0/product/<int:id>',get_product_by_id,name="get_indivual_product"),    # signup user
+    path('api/v1.0/product/<int:id>',get_product_by_id,name="get_indivual_product"), 
+    # Get related product by id
+    path('api/v1.0/related_product/<int:id>',related_products,name="get_related_products"),   
     # register user
     path('api/v1.0/auth/signin/',RegisterUser,name='signUp_user'),
     # login 
