@@ -17,7 +17,9 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from django.utils.timezone import now, timedelta
 from decouple import config
-from app.utility import otp_mail
+from app.utility import otp_mail,generate_tracking_id,send_email
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 
 
@@ -252,41 +254,40 @@ def create_order(request):
             try:
                 payload = jwt.decode(token, config('SECRET'), algorithms=['HS256'])
                 user = User.objects.filter(id=payload['id']).first()
-                print(f"Authenticated user found: {user.last_name}")
+                print(f"Authenticated user found: {user}")
             except jwt.ExpiredSignatureError:
                 return Response({"error": "Token has expired"}, status=status.HTTP_401_UNAUTHORIZED)
             except jwt.InvalidTokenError:
                 return Response({"error": "Invalid token"}, status=status.HTTP_401_UNAUTHORIZED)
+        
         if not user:
             guest_first_name = request.data.get('guest_FirstName')
             guest_last_name = request.data.get('guest_LastName')
             guest_phone = request.data.get('guest_phone')
             guest_email = data.get('guest_email')
 
-            if guest_email:
-                # Check if an account with this email already exists
-                existing_user = GuestUser.objects.filter(email=guest_email).first()
-                
-                if existing_user:
-                    # Use the existing user instead of creating a guest user
-                    guest_user = existing_user
-                    print(f"Using existing registered user for email: {guest_email}")
+            if not guest_email:
+                return Response({"error": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST)
             
+            validator = EmailValidator()
+            try:
+                validator(guest_email)
+            except ValidationError:
+                return Response({"error": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            existing_user = GuestUser.objects.filter(email=guest_email).first()
+            if existing_user:
+                # Use the existing user instead of creating a guest user
+                guest_user = existing_user
+                print(f"Using existing registered user for email: {guest_email}")
             else:
-                validator = EmailValidator()
-                try:
-                    validator(guest_email)
-                except ValidationError:
-                    return Response({"error": "Invalid email format"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                guest_user, _ = GuestUser.objects.get_or_create(
+                # Create a new guest user if not found
+                guest_user = GuestUser.objects.create(
                     email=guest_email,
                     first_name=guest_first_name,
                     last_name=guest_last_name,
                     phone_number=guest_phone
                 )
-        else:
-            return Response({"error": "Guest email is required for guest users"}, status=status.HTTP_400_BAD_REQUEST)
 
         print("Shipping Address Creating")
 
@@ -332,10 +333,11 @@ def create_order(request):
             shipping_address=shipping_address,
             total_price=total_price  # Use the total amount calculated from the order items
         )
+        order.tracking_id = generate_tracking_id()
 
         # Add order items to the order
         order.items.set(order_items)  # Set the order items for this order
-
+    
         order.save()
 
         # Serialize and return the order data
@@ -367,6 +369,48 @@ def get_order(request):
     serialized = OrderSerializer(order)
     return Response(serialized.data, status=status.HTTP_200_OK)
 
+# send details to the email
+@api_view(['POST'])
+def send_order_confirmation_email(request):
+    order_id = request.data.get("order_id")
+    if not order_id:
+        return Response({"error": "Order ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Fetch the order and associated data
+        order = Order.objects.get(id=order_id)
+        serializer = OrderSerializer(order)
+
+        # Render the HTML content for the email using the template
+        html_content = render_to_string("emails/order_confirmation.html", {
+            "user_name": order.user.first_name if order.user else order.guest_user.first_name,
+            "tracking_no": order.tracking_id,
+            "order_items": serializer.data['items'],
+            "total_price": order.total_price,
+            'zip_code': order.shipping_address.zip_code,
+            'country': order.shipping_address.country,
+            'city':order.shipping_address.city,
+            'state': order.shipping_address.state,
+            'street_address': order.shipping_address.street_address,
+            
+        })
+
+        # Send the email using the utility function
+        recipient_email = order.user.email if order.user else order.guest_user.email
+        send_email(
+            subject="Order Confirmation - Klinsept",
+            message="",
+            html_content=html_content,
+            recipient_list=[recipient_email]
+        )
+
+        return Response({"message": "Order confirmation email sent successfully"}, status=status.HTTP_200_OK)
+
+    except Order.DoesNotExist:
+        return Response({"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # proceed to payment
@@ -374,9 +418,7 @@ def get_order(request):
 def create_payment(request):
     data = request.data()
     try:
-
         order_id = request.get(order_id)
-
         check_order = Order.objects.filter(id=order_id).first()
         if not check_order:
             return Response({"Error":"Order ID is Required"},status=status.HTTP_400_BAD_REQUEST)
@@ -401,3 +443,30 @@ def create_payment(request):
 
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# check status on order and rollback 
+@api_view(["GET"])
+def check_pending_orders(request):
+    try:
+        time_limit = now() - timedelta(minutes=1)
+        pending_orders = Order.objects.filter(status='Pending', created_at__lte=time_limit)
+
+        if pending_orders.exists():
+            for order in pending_orders:
+                # Rollback order by returning items to inventory
+                for item in order.items.all():
+                    product = item.product
+                    product.stock += item.quantity
+                    product.save()
+
+                # Delete the pending order
+                order.delete()
+
+            return Response({"message": "Rolled back orders."}, status=status.HTTP_200_OK)
+        else:
+            # If no orders found that are older than 1 hour
+            return Response({"message": "No orders to rollback; all pending orders are within 1 hour."}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
