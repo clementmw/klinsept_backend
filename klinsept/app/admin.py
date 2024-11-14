@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product,Category
+from .models import Product,Category,Order
 
 # personalized the admin dashboard
 
@@ -22,3 +22,10 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ['name']
 
 admin.site.register(Category,CategoryAdmin)
+
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('user','guest_user','shipping_address','total_price','status','shipping_cost','tax','tracking_id')
+    search_fields = ['tracking_id']
+    list_filter = ['status']
+
+admin.site.register(Order,OrderAdmin)

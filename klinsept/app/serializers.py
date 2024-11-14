@@ -62,7 +62,7 @@ class OrderSerializer(serializers.ModelSerializer):
     shipping_address = ShippingAddressSerializer(read_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'user','guest_user', 'items', 'total_price','shipping_address','tracking_id']
+        fields = ['id', 'user','guest_user', 'items','shipping_cost','tax', 'total_price','shipping_address','tracking_id']
 
 
 class PaymentSerializer(serializers.ModelSerializer):

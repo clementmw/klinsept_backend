@@ -19,7 +19,7 @@ from django.utils.timezone import now, timedelta
 from decouple import config
 from app.utility import otp_mail,generate_tracking_id,send_email
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
+# from django.utils.html import strip_tags
 
 
 
@@ -174,6 +174,24 @@ def get_product_by_id(request,id):
 
     except Exception as e:
         return Response ({'error':str(e),status:status.HTTP_500_INTERNAL_SERVER_ERROR})
+
+
+# get related products 
+@api_view(['GET'])
+def related_products(request,id):
+    try:
+        products = get_object_or_404(Product,id=id)
+        category = Product.objects.filter(category=products.category).exclude(id=products.id)
+
+        serializer = ProductSerializer(category, many=True)
+        
+        return Response(serializer.data)
+    
+    except Product.DoesNotExist:
+        return Response({"message": "Product not found"}, status=404)
+    
+    except Exception as e:
+        return Response({"message": "An error occurred while retrieving related products."}, status=500)    
 
 
 #----------------------------------------contact the company using email --------------------------#
@@ -369,7 +387,7 @@ def get_order(request):
     serialized = OrderSerializer(order)
     return Response(serialized.data, status=status.HTTP_200_OK)
 
-# send details to the email
+# -------------------------------------------------------------- send order to email -----------------------------------#
 @api_view(['POST'])
 def send_order_confirmation_email(request):
     order_id = request.data.get("order_id")
@@ -392,6 +410,8 @@ def send_order_confirmation_email(request):
             'city':order.shipping_address.city,
             'state': order.shipping_address.state,
             'street_address': order.shipping_address.street_address,
+            'shipping_cost':order.shipping_cost,
+            'tax':order.tax
             
         })
 
@@ -413,7 +433,7 @@ def send_order_confirmation_email(request):
 
 
 
-# proceed to payment
+# ---------------------------------------------------------------- Payment Routes -----------------------------------------------#
 @api_view(['POST'])
 def create_payment(request):
     data = request.data()
@@ -445,7 +465,7 @@ def create_payment(request):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# check status on order and rollback 
+# ----------------------------------------------------------- check status on order and rollback --------------------------------------#
 @api_view(["GET"])
 def check_pending_orders(request):
     try:

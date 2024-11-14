@@ -4,6 +4,7 @@ from .utility import generate_otp
 from datetime import timedelta
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from app.managers import CustomUserManager
 
 
 class User(AbstractUser):
@@ -34,7 +35,7 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
     
-
+    objects = CustomUserManager()  # Use the custom manager
 
 
 class Category(models.Model):
@@ -67,6 +68,9 @@ class GuestUser(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"{self.first_name},{self.last_name}"
+
 class ShippingAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shipping_addresses',null=True,blank=True)
     guest_user = models.ForeignKey(GuestUser, on_delete=models.CASCADE, related_name='shipping_addresses', null=True, blank=True)
@@ -86,7 +90,7 @@ class Order(models.Model):
     guest_user = models.ForeignKey(GuestUser, on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
     shipping_address = models.ForeignKey(ShippingAddress, on_delete=models.CASCADE, related_name='orders',null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
-    status = models.CharField(max_length=50,choices=[('paid','Paid'),('pending','Pending')],default="Pending") 
+    status = models.CharField(max_length=50,choices=[('Paid','Paid'),('Pending','Pending')],default="Pending") 
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     tracking_id = models.CharField(max_length=20,unique=True,blank=True,null=True)
@@ -103,7 +107,17 @@ class Order(models.Model):
         super().save(*args, **kwargs)
     
     def __str__(self):
-        return f"Order {self.id} by {self.user.email if self.user else self.guest_user.email}"
+        user_email = self.user.email if self.user else (self.guest_user.email if self.guest_user else "Guest")
+        details = (
+            f"Order ID: {self.id} | "
+            f"User: {user_email} | "
+            f"Status: {self.status} | "
+            f"Total: ${self.total_price:.2f} | "
+            f"Shipping Cost: ${self.shipping_cost:.2f} | "
+            f"Tax: ${self.tax:.2f} | "
+            f"Tracking ID: {self.tracking_id or 'Not assigned'}"
+        )
+        return details
 
 
 class OrderItem(models.Model):
