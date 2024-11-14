@@ -1,6 +1,12 @@
 from django.contrib import admin
 from .models import Product,Category
 
+# personalized the admin dashboard
+
+admin.site.site_header = "KLINSEPT DASHBOARD "
+admin.site.site_title = "Klinsept"
+admin.site.index_title = "Welcome to Your your Dashboard"
+
 # Register your models here.
 
 class ProductAdmin(admin.ModelAdmin):

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333333;
+        }
+        p {
+            font-size: 16px;
+            color: #555555;
+        }
+        .order-items {
+            margin-top: 20px;
+        }
+        .order-items table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .order-items th, .order-items td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .footer {
+            font-size: 14px;
+            color: #777777;
+            text-align: left;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <h1>ORDER CONFIRMATION</h1>
+        <p>Dear {{ user_name }},</p>
+        <p>Thank you for your order! Your order number is <strong>{{ tracking_no }}</strong>.</p>
+
+        <div class="order-items">
+            <h3>Order Items:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                        <tr>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.price }}</td>
+                            <td>{{ item.line_total }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p>Total: {{ total_price }}</p>
+
+        <div class="order-items">
+        <h3>Shipping Address.</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Zip-Code</th>
+                    <th>Country</th>
+                    <th>City</th>
+                    <th>State</th>
+                    <th>Street Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ zip_code }}</td>
+                    <td>{{ country }}</td>
+                    <td>{{ city }}</td>
+                    <td>{{ state }}</td>
+                    <td>{{ street_address }}</td>
+                </tr>
+            </tbody>
+        </table>
+        </div>
+        <p>Upon confirmation of your payment, we will notify you once your order has been dispatched.</p>
+        <tr>
+            <td class="es-m-p0r es-m-p20b" valign="top" align="center" style="padding:0;Margin:0;width:178px">
+             <table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
+               <tr>
+                <td align="left" class="es-m-txt-c es-m-p5t" style="padding:0;Margin:0;padding-bottom:5px"><h3 style="Margin:0;line-height:28.8px;mso-line-height-rule:exactly;font-family:Raleway, Arial, sans-serif;font-size:24px;font-style:normal;font-weight:normal;color:#386641"><br>Violet</h3></td>
+               </tr>
+         <tr>
+            <td align="left" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:5px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:tahoma, verdana, segoe, sans-serif;line-height:24px;color:#4D4D4D;font-size:16px">CEO of the company</p></td>
+           </tr>
+           <tr>
+            <td align="left" class="es-m-txt-c" style="padding:0;Margin:0;padding-top:10px;font-size:0px"><a target="_blank" href="https://viewstripo.email" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#6A994E;font-size:16px"><img src="https://eruuclt.stripocdn.email/content/guids/CABINET_af08f412597e682bf2508636e5fc6513/images/vector_251_Wop.png" alt="Signature" style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" width="60" title="Signature" height="35"></a></td>
+           </tr>
+         </table></td>
+       </tr>
+       <div class="footer">
+            <p>&copy; 2024 Klinsept</p>
+        </div>
+    </div>
+</body>
+</html>
