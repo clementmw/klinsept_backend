@@ -32,7 +32,6 @@ django-cors-headers==4.6.0
 djangorestframework==3.15.2
 djangorestframework-simplejwt==5.3.1
 docutils==0.17.1
-duplicity==0.8.21
 ecdsa==0.18.0
 et-xmlfile==1.1.0
 exceptiongroup==1.2.0
