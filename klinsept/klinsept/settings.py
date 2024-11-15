@@ -30,7 +30,7 @@ print(f"API_KEY: {API_KEY}")  # This should print the key during startup.
 
 # SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'app',
     'rest_framework',
     'corsheaders',
+    'drf_yasg'
 
 ]
 
