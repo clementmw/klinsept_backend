@@ -165,6 +165,15 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',  # Allow custom Authorization headers
+    'x-api-key',  # Allow X-Requested-With header (useful for AJAX requests)
+    'accept',
+    'origin',
+    'x-custom-header',  # Example of a custom header you'd like to allow
+    'X-Frame-Options',   # Another example of a custom header
+]
 CORS_ALLOW_CREDENTIALS = True
 
 CACHES = {
