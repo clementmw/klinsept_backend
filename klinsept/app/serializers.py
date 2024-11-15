@@ -19,7 +19,18 @@ class UserSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
-        
+
+class LoginResponseSerializer(serializers.Serializer):
+    jwt = serializers.CharField()
+
+class PasswordResetOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+class VerifyOtpSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    otp = serializers.CharField(required=True)
+    new_password = serializers.CharField(min_length=8, required=True)
+
 
 class GuestUserSerializer(serializers.ModelSerializer):
     class Meta:
