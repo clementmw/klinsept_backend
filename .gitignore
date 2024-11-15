@@ -1,6 +1,7 @@
 .env
 __pycache__/
 klinsept_db.sqlite3
-migrations
 db.sqlite3
 *.py[cod]
+test_env
+
