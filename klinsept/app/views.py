@@ -3,7 +3,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from app.models import User, Product,Order,OrderItem,Payment,GuestUser,ShippingAddress
-from .serializers import UserSerializer, ProductSerializer,OrderItemSerializer,OrderSerializer,PaymentSerializer
+from .serializers import UserSerializer, ProductSerializer,OrderItemSerializer,OrderSerializer,PaymentSerializer,LoginResponseSerializer,PasswordResetOtpSerializer,VerifyOtpSerializer
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
@@ -20,10 +20,20 @@ from decouple import config
 from app.utility import otp_mail,generate_tracking_id,send_email
 from django.template.loader import render_to_string
 # from django.utils.html import strip_tags
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
+#----------------------------REGISTER USER ---------------------------------#
 
-
-#----------------------------REGISTER AND LOGIN USER ---------------------------------#
+# expected response from route
+@swagger_auto_schema(
+    method='post',
+    request_body=UserSerializer,
+    responses={
+        201: UserSerializer,
+        400: 'Invalid data provided'
+    }
+)
 # Register new user 
 @api_view(['POST'])
 def RegisterUser(request):
@@ -32,6 +42,17 @@ def RegisterUser(request):
     serializer.save()
     return Response(serializer.data)
 
+#---------------------------- LOGIN USER ---------------------------------#
+
+@swagger_auto_schema(
+    method='post',
+    request_body=UserSerializer,
+    responses={
+        200: LoginResponseSerializer,
+        400: 'Invalid data provided',
+        401: 'Authentication failed'
+    }
+)
 @api_view(['POST'])
 def LoginUser(request):
     email = request.data['email']
@@ -61,6 +82,15 @@ def LoginUser(request):
     return response
 
 # GETCOOKIE
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: UserSerializer,
+        400: "Expired cookie",
+        404: "User not found",
+        500: "Internal server error",
+    },
+)
 @api_view(['GET'])
 def get_cookie(request):
     token = request.COOKIES.get('jwt')
@@ -79,9 +109,19 @@ def get_cookie(request):
 
 
 
-#----------------------------FORGET PASSWORD ROUTE ---------------------------------#
+#----------------------------Request OTP for password reset ---------------------------------#
 
-# Request OTP for password reset
+
+# @swagger_auto_schema(
+#     method="post",
+#     request_body=PasswordResetOtpSerializer,
+#     responses={
+#         200: openapi.Response("OTP sent successfully", {"Message": "OTP sent to your email."}),
+#         404: "User not found",
+#         500: "Internal server error",
+#     },
+# )
+
 @api_view(["POST"])
 def password_reset_otp(request):
     try:
@@ -91,18 +131,26 @@ def password_reset_otp(request):
         user = get_object_or_404(User, email=email)
 
         user.set_otp()
-
-        # # Send OTP
-        # subject = "Your Password Reset OTP"
-        # message = f"Your OTP for password reset is: {user.otp}. It expires in 2 minutes."
-        # send_mail(subject, message, settings.EMAIL_HOST_USER, [user.email])
         otp_mail(user.otp,user.email)
 
         return Response({"Message": "OTP sent to your email."})
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Verify OTP for password reset
+#----------------------------Verify OTP for password reset ---------------------------------#
+
+
+# @swagger_auto_schema(
+#     method="post",
+#     request_body=VerifyOtpSerializer,
+#     responses={
+#         200: openapi.Response("Password reset successfully", {"Message": "Password reset successfully"}),
+#         400: "Invalid or expired OTP or invalid password",
+#         404: "User not found",
+#         500: "Internal server error",
+#     },
+# )
+
 @api_view(['POST'])
 def verify_otp(request):
     try:
@@ -136,15 +184,27 @@ def verify_otp(request):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Logout
+#----------------------------LOGOUT---------------------------------#
+@swagger_auto_schema(
+    method="post",
+    responses={
+        200: openapi.Response("Logout Successfull"),
+        400: "Expired cookie",
+        404: "User not found",
+        500: "Internal server error",
+    },
+)
 @api_view(['POST'])
 def Logout(request):
-    response = Response()
-    response.delete_cookie('jwt')
-    response.data = {
-        'Message':"Logout Successfull"
-    }
-    return response
+    try:
+        response = Response()
+        response.delete_cookie('jwt')
+        response.data = {
+            'Message':"Logout Successfull"
+        }
+        return response
+    except Exception as e:
+        return response({"error":str(e)})
     
 #----------------------------PRODUCTS------------------------------------------#
 # get all products
@@ -153,6 +213,14 @@ class ProductPagination(PageNumberPagination):
     page_size_query_param = 'page_size'  # Allow client to change page size with ?page_size=5
     max_page_size = 100  # Limit the maximum page size
 
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer,
+        400: "Expired cookie",
+        404: "User not found",
+        500: "Internal server error",
+})
 @api_view(['GET'])
 def getProducts(request):
     try:
@@ -163,8 +231,17 @@ def getProducts(request):
         return paginator.get_paginated_response(serializer.data)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+  
 # get all products by id
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer,
+        400: "Expired cookie",
+        404: "User not found",
+        500: "Internal server error",
+})
+
 @api_view(['GET'])
 def get_product_by_id(request,id):
     try:
@@ -175,7 +252,14 @@ def get_product_by_id(request,id):
     except Exception as e:
         return Response ({'error':str(e),status:status.HTTP_500_INTERNAL_SERVER_ERROR})
 
-
+@swagger_auto_schema(
+    method="get",
+    responses={
+        200: ProductSerializer,
+        400: "Expired cookie",
+        404: "User not found",
+        500: "Internal server error",
+})
 # get related products 
 @api_view(['GET'])
 def related_products(request,id):
