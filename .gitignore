@@ -4,4 +4,5 @@ klinsept_db.sqlite3
 db.sqlite3
 *.py[cod]
 test_env
+staticfiles
 
